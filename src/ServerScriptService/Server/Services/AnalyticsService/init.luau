@@ -34,14 +34,12 @@ function AnalyticsService:_onPlayerJoined(player: Player)
 			local today = os.date("!%Y-%m-%d", os.time())
 
 			-- Update session count
-			local ok1, sessionCount = PlayerDataService:Read(player, { "SessionCount" }):await()
-			if ok1 then
-				PlayerDataService:Write(player, { "SessionCount" }, (sessionCount or 0) + 1)
-			end
+			local sessionCount = PlayerDataService:Read(player, { "SessionCount" }) or 0
+			PlayerDataService:Write(player, { "SessionCount" }, sessionCount + 1)
 
 			-- Set first join date if not set
-			local ok2, firstJoinDate = PlayerDataService:Read(player, { "FirstJoinDate" }):await()
-			if ok2 and (not firstJoinDate or firstJoinDate == "") then
+			local firstJoinDate = PlayerDataService:Read(player, { "FirstJoinDate" })
+			if not firstJoinDate or firstJoinDate == "" then
 				PlayerDataService:Write(player, { "FirstJoinDate" }, today)
 			end
 
@@ -65,10 +63,8 @@ function AnalyticsService:_onPlayerLeft(player: Player)
 		-- Update total play time
 		PlayerDataService:WaitForProfile(player)
 			:andThen(function()
-				local ok, totalPlayTime = PlayerDataService:Read(player, { "TotalPlayTime" }):await()
-				if ok then
-					PlayerDataService:Write(player, { "TotalPlayTime" }, (totalPlayTime or 0) + sessionDuration)
-				end
+				local totalPlayTime = PlayerDataService:Read(player, { "TotalPlayTime" }) or 0
+				PlayerDataService:Write(player, { "TotalPlayTime" }, totalPlayTime + sessionDuration)
 			end)
 			:catch(function() end) -- Player may already be gone
 
@@ -112,11 +108,7 @@ function AnalyticsService:TrackEconomy(
 		else Enum.AnalyticsEconomyFlowType.Sink
 
 	-- Read current balance for endingBalance
-	local balance = 0
-	local ok, currentBalance = PlayerDataService:Read(player, { currency }):await()
-	if ok and currentBalance then
-		balance = currentBalance
-	end
+	local balance = PlayerDataService:Read(player, { currency }) or 0
 
 	pcall(function()
 		RobloxAnalyticsService:LogEconomyEvent(player, economyFlowType, currency, amount, balance, context, context, {})

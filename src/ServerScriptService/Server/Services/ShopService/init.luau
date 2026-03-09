@@ -29,11 +29,7 @@ local ShopService = Knit.CreateService({
 -- ============================================================================
 
 function ShopService:GetCurrency(player: Player, currencyName: string): number
-	local ok, amount = PlayerDataService:Read(player, { currencyName }):await()
-	if ok and amount then
-		return amount
-	end
-	return 0
+	return PlayerDataService:Read(player, { currencyName }) or 0
 end
 
 function ShopService:AddCurrency(player: Player, currencyName: string, amount: number)
@@ -80,11 +76,7 @@ function ShopService:GetShopItems(): { ShopConfig.ShopItem }
 end
 
 function ShopService:GetInventory(player: Player): { [string]: number }
-	local ok, inventory = PlayerDataService:Read(player, { "Inventory" }):await()
-	if ok and inventory then
-		return inventory
-	end
-	return {}
+	return PlayerDataService:Read(player, { "Inventory" }) or {}
 end
 
 function ShopService:CanAfford(player: Player, itemId: string): boolean
@@ -122,13 +114,7 @@ function ShopService:PurchaseItem(player: Player, itemId: string): (boolean, str
 	end
 
 	-- Grant item
-	local ok, inventory = PlayerDataService:Read(player, { "Inventory" }):await()
-	if not ok then
-		-- Refund on failure
-		self:AddCurrency(player, item.Currency, item.Price)
-		return false, "Could not read inventory"
-	end
-	inventory = inventory or {}
+	local inventory = PlayerDataService:Read(player, { "Inventory" }) or {}
 	inventory[itemId] = (inventory[itemId] or 0) + 1
 	PlayerDataService:Write(player, { "Inventory" }, inventory)
 
