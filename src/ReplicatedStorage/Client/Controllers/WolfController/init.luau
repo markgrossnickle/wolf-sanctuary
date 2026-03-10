@@ -10,6 +10,7 @@ local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages.Signal)
 local Trove = require(ReplicatedStorage.Packages.Trove)
 
+local WolfData = require(ReplicatedStorage.Shared.Data.WolfData)
 local WolfModelBuilder = require(script.WolfModelBuilder)
 local WolfAnimator = require(script.WolfAnimator)
 
@@ -30,13 +31,16 @@ function WolfController:KnitInit() end
 function WolfController:KnitStart()
 	local WolfService = Knit.GetService("WolfService")
 
-	-- Load initial wolf data
+	-- Load initial wolf data and increment play day
 	task.spawn(function()
 		local ok, data = WolfService:GetWolfData():await()
 		if ok and data then
 			self._wolfData = data
 			self:_spawnWolf(data.Stage, data.CoatColor)
 		end
+
+		-- Increment play day for this session
+		WolfService:IncrementPlayDay()
 	end)
 
 	-- Listen for stage advancement
@@ -101,6 +105,35 @@ function WolfController:_onStageAdvanced(prevStage: string, newStage: string, fa
 	end
 
 	self.StageAdvanced:Fire(prevStage, newStage, factText)
+end
+
+--[=[
+	Returns the cached current stage.
+]=]
+function WolfController:GetCurrentStage(): string
+	return if self._wolfData then self._wolfData.Stage else "Newborn"
+end
+
+--[=[
+	Returns the cached current stats.
+]=]
+function WolfController:GetCurrentStats(): { Hunger: number, Energy: number, Happiness: number }?
+	return if self._wolfData then self._wolfData.Stats else nil
+end
+
+--[=[
+	Returns the cached wolf name.
+]=]
+function WolfController:GetWolfName(): string
+	return if self._wolfData then self._wolfData.Name else ""
+end
+
+--[=[
+	Returns the stage definition for the current stage.
+]=]
+function WolfController:GetCurrentStageDef()
+	local stage = self:GetCurrentStage()
+	return WolfData.Stages[stage]
 end
 
 --[=[
